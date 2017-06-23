@@ -3,7 +3,8 @@ import { StyleSheet, Linking, View, Dimensions } from 'react-native';
 import { Container, Content, Button, Text } from 'native-base';
 import jwtDecoder from 'jwt-decode'
 import config from './config.json';
-import Expo from 'expo'
+import Expo from 'expo';
+import AWS from 'aws-sdk/dist/aws-sdk-react-native';
 
 export default class Login extends React.Component {
   componentDidMount() {
@@ -53,6 +54,21 @@ export default class Login extends React.Component {
     Expo.WebBrowser.openBrowserAsync(redirectionURL)
   };
 
+  _awsCognitoLogin(encodedToken) {
+    // connect to Cognito
+    AWS.config.region = config.aws.region;
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: [config.aws.cognito.identityPoolId],
+      Logins: {
+        [config.aws.cognito.identityProviderName]: encodedToken
+      }
+    });
+
+    AWS.config.credentials.get(() => {
+      console.log(AWS.config.credentials);
+    })
+  }
+
   _handleAuth0Redirect = async (event) => {
     if (!event.url.includes('+/redirect')) {
       return;
@@ -69,6 +85,8 @@ export default class Login extends React.Component {
     const encodedToken = responseObj.id_token;
     const decodedToken = jwtDecoder(encodedToken);
     const username = decodedToken.name;
+
+    this._awsCognitoLogin(encodedToken);
 
     this.props.onLoggedIn({
       username: username,
