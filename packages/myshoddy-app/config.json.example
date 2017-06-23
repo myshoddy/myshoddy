@@ -4,5 +4,12 @@
       "redirectUrl": "",
       "authorizeUrl": "",
       "clientId": ""
-    }
+    },
+    "aws": {
+        "cognito": {
+          "identityPoolId": "",
+          "identityProviderName": ""
+        },
+        "region": ""
+      }
 }
