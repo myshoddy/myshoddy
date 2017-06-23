@@ -1,3 +1,8 @@
 {
-    "GRAPHQL_API": ""
+    "graphqlApi": "",
+    "auth0": {
+      "redirectUrl": "",
+      "authorizeUrl": "",
+      "clientId": ""
+    }
 }
