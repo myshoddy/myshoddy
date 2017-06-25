@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Linking, View, Dimensions } from 'react-native';
-import { Container, Content, Button, Text } from 'native-base';
+import {StyleSheet, Linking, View, Dimensions, AsyncStorage} from 'react-native';
+import {Container, Content, Button, Text} from 'native-base';
 import jwtDecoder from 'jwt-decode'
 import config from './config.json';
 import Expo from 'expo';
@@ -18,7 +18,7 @@ export default class Login extends React.Component {
     return (
       <Container>
         <Content padder>
-          <View style={{ flex: 1, height: screenHeight, justifyContent: 'center' }}>
+          <View style={{flex: 1, height: screenHeight, justifyContent: 'center'}}>
             <Button block success onPress={this._loginWithAuth0}>
               <Text>Login</Text>
             </Button>
@@ -45,28 +45,48 @@ export default class Login extends React.Component {
     const auth0_client_id = config.auth0.clientId;
 
     const redirectionURL = authorize_url + this._toQueryString({
-      client_id: auth0_client_id,
-      response_type: 'token',
-      scope: 'openid name',
-      redirect_uri,
-      state: redirect_uri,
-    });
+        client_id: auth0_client_id,
+        response_type: 'token',
+        scope: 'openid name',
+        redirect_uri,
+        state: redirect_uri,
+      });
     Expo.WebBrowser.openBrowserAsync(redirectionURL)
   };
 
+  _setValueLocalStorage = async (key, value) => {
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch (error) { // log the error
+    }
+  };
+
+  _getValueLocalStorage = async (key) => {
+    try {
+      const value = await AsyncStorage.getItem(key);
+    } catch (error) { // log the error
+    }
+  }
+
   _awsCognitoLogin(encodedToken) {
+
     // connect to Cognito
     AWS.config.region = config.aws.region;
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-      IdentityPoolId: [config.aws.cognito.identityPoolId],
+      IdentityPoolId: config.aws.cognito.identityPoolId,
       Logins: {
         [config.aws.cognito.identityProviderName]: encodedToken
       }
     });
 
-    AWS.config.credentials.get(() => {
-      console.log(AWS.config.credentials);
-    })
+    const promise = AWS.config.credentials.getPromise();
+    promise.then(() => {
+      this._setValueLocalStorage('sessionToken', AWS.config.credentials.sessionToken);
+    }, function (err) {
+      console.log(err)
+    });
+
+    this._getValueLocalStorage('sessionToken');
   }
 
   _handleAuth0Redirect = async (event) => {
@@ -95,7 +115,7 @@ export default class Login extends React.Component {
 
   _toQueryString(params) {
     return '?' + Object.entries(params)
-      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-      .join('&')
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&')
   }
 }
